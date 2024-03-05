@@ -1,0 +1,212 @@
+Homework
+-----------------------------------------------------------------------------------------------------------------
+create VPC
+
+aws ec2 create-vpc --cidr-block 10.0.0.0/16 --no-verify-ssl
+urllib3\connectionpool.py:1061: InsecureRequestWarning: Unverified HTTPS request is being made to host 'ec2.us-east-1.amazonaws.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/1.26.x/advanced-usage.html#ssl-warnings
+{
+    "Vpc": {
+        "CidrBlock": "10.0.0.0/16",
+        "DhcpOptionsId": "dopt-065e1055c604c27ed",
+        "State": "pending",
+        "VpcId": "vpc-06e4e24280f617c6d",
+        "OwnerId": "471112698304",
+        "InstanceTenancy": "default",
+        "Ipv6CidrBlockAssociationSet": [],
+        "CidrBlockAssociationSet": [
+            {
+                "AssociationId": "vpc-cidr-assoc-0ce44cd3b73f38b25",
+                "CidrBlock": "10.0.0.0/16",
+                "CidrBlockState": {
+                    "State": "associated"
+                }
+            }
+        ],
+        "IsDefault": false
+    }
+}
+
+create subnet 1st for public use
+
+aws ec2 create-subnet --vpc-id vpc-06e4e24280f617c6d --cidr-block 10.0.1.0/24  --no-verify-ssl
+
+{
+    "Subnet": {
+        "AvailabilityZone": "us-east-1f",
+        "AvailabilityZoneId": "use1-az5",
+        "AvailableIpAddressCount": 251,
+        "CidrBlock": "10.0.1.0/24",
+        "DefaultForAz": false,
+        "MapPublicIpOnLaunch": false,
+        "State": "available",
+        "SubnetId": "subnet-0817d86b64de98d5d",
+        "VpcId": "vpc-06e4e24280f617c6d",
+        "OwnerId": "471112698304",
+        "AssignIpv6AddressOnCreation": false,
+        "Ipv6CidrBlockAssociationSet": [],
+        "SubnetArn": "arn:aws:ec2:us-east-1:471112698304:subnet/subnet-0817d86b64de98d5d",
+        "EnableDns64": false,
+        "Ipv6Native": false,
+        "PrivateDnsNameOptionsOnLaunch": {
+            "HostnameType": "ip-name",
+            "EnableResourceNameDnsARecord": false,
+            "EnableResourceNameDnsAAAARecord": false
+        }
+    }
+}
+
+create subnet 2nd for private use
+
+aws ec2 create-subnet --vpc-id vpc-06e4e24280f617c6d --cidr-block 10.0.2.0/24  --no-verify-ssl
+
+{
+    "Subnet": {
+        "AvailabilityZone": "us-east-1f",
+        "AvailabilityZoneId": "use1-az5",
+        "AvailableIpAddressCount": 251,
+        "CidrBlock": "10.0.2.0/24",
+        "DefaultForAz": false,
+        "MapPublicIpOnLaunch": false,
+        "State": "available",
+        "SubnetId": "subnet-0fc98a244617eb3e0",
+        "VpcId": "vpc-06e4e24280f617c6d",
+        "OwnerId": "471112698304",
+        "AssignIpv6AddressOnCreation": false,
+        "Ipv6CidrBlockAssociationSet": [],
+        "SubnetArn": "arn:aws:ec2:us-east-1:471112698304:subnet/subnet-0fc98a244617eb3e0",
+        "EnableDns64": false,
+        "Ipv6Native": false,
+        "PrivateDnsNameOptionsOnLaunch": {
+            "HostnameType": "ip-name",
+            "EnableResourceNameDnsARecord": false,
+            "EnableResourceNameDnsAAAARecord": false
+        }
+    }
+}
+
+create internet getway
+
+aws ec2 create-internet-gateway  --no-verify-ssl
+
+{
+    "InternetGateway": {
+        "Attachments": [],
+        "InternetGatewayId": "igw-084ea4e43f58bab09",
+        "OwnerId": "471112698304",
+        "Tags": []
+    }
+}
+
+attach IG to VPS
+
+aws ec2 attach-internet-gateway --vpc-id vpc-06e4e24280f617c6d --internet-gateway-id igw-084ea4e43f58bab09  --no-verify-ssl
+
+
+create route table for public subnet
+
+aws ec2 create-route-table --vpc-id vpc-06e4e24280f617c6d  --no-verify-ssl
+
+{
+    "RouteTable": {
+        "Associations": [],
+        "PropagatingVgws": [],
+        "RouteTableId": "rtb-0dc1fb3033eb6ff75",
+        "Routes": [
+            {
+                "DestinationCidrBlock": "10.0.0.0/16",
+                "GatewayId": "local",
+                "Origin": "CreateRouteTable",
+                "State": "active"
+            }
+        ],
+        "Tags": [],
+        "VpcId": "vpc-06e4e24280f617c6d",
+        "OwnerId": "471112698304"
+    },
+    "ClientToken": "84223891-5151-4139-ab5c-7dfaadd6ab4e"
+}
+
+
+
+aws ec2 create-route --route-table-id rtb-0dc1fb3033eb6ff75  --destination-cidr-block 0.0.0.0/0 --gateway-id igw-084ea4e43f58bab09 --no-verify-ssl
+
+{
+    "Return": true
+}
+
+
+aws ec2 associate-route-table --subnet-id subnet-0817d86b64de98d5d --route-table-id rtb-0dc1fb3033eb6ff75 --no-verify-ssl
+
+{
+    "AssociationId": "rtbassoc-03716b27bc5586e88",
+    "AssociationState": {
+        "State": "associated"
+    }
+}
+
+create elastic ip
+
+aws ec2 allocate-address --domain vpc  --no-verify-ssl
+
+{
+    "PublicIp": "54.83.24.204",
+    "AllocationId": "eipalloc-015a81ab4d2457007",
+    "PublicIpv4Pool": "amazon",
+    "NetworkBorderGroup": "us-east-1",
+    "Domain": "vpc"
+}
+
+create nat - gw
+
+aws ec2 create-nat-gateway --subnet-id subnet-0817d86b64de98d5d  --allocation-id eipalloc-015a81ab4d2457007 --no-verify-ssl
+
+{
+    "ClientToken": "45f87797-4ea5-486c-8a82-c8d0d9eebe9e",
+    "NatGateway": {
+        "CreateTime": "2024-03-05T10:35:39+00:00",
+        "NatGatewayAddresses": [
+            {
+                "AllocationId": "eipalloc-015a81ab4d2457007",
+                "IsPrimary": true,
+                "Status": "associating"
+            }
+        ],
+        "NatGatewayId": "nat-09b269cda9d161f00",
+        "State": "pending",
+        "SubnetId": "subnet-0817d86b64de98d5d",
+        "VpcId": "vpc-06e4e24280f617c6d",
+        "ConnectivityType": "public"
+    }
+}
+
+create route table for private
+
+aws ec2 create-route-table --vpc-id vpc-06e4e24280f617c6d  --no-verify-ssl
+
+{
+    "RouteTable": {
+        "Associations": [],
+        "PropagatingVgws": [],
+        "RouteTableId": "rtb-0a555c8322743f952",
+        "Routes": [
+            {
+                "DestinationCidrBlock": "10.0.0.0/16",
+                "GatewayId": "local",
+                "Origin": "CreateRouteTable",
+                "State": "active"
+            }
+        ],
+        "Tags": [],
+        "VpcId": "vpc-06e4e24280f617c6d",
+        "OwnerId": "471112698304"
+    },
+    "ClientToken": "33897bdc-d741-4546-b79f-72e47e2361e9"
+}
+
+aws ec2 create-route --route-table-id rtb-0a555c8322743f952  --destination-cidr-block 0.0.0.0/0 --nat-gateway-id nat-09b269cda9d161f00  --no-verify-ssl
+{
+    "Return": true
+}
+
+
+aws ec2 associate-route-table --subnet-id subnet-0fc98a244617eb3e0 --route-table-id rtb-0a555c8322743f952  --no-verify-ssl
